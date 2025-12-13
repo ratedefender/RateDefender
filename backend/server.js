@@ -40,7 +40,10 @@ app.use(express.json({ limit: '10kb' }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
 // Prevent NoSQL injection
-app.use(mongoSanitize());
+// Disabled `express-mongo-sanitize` temporarily due to compatibility issues
+// with newer Express request object getters. Replace or re-enable after
+// updating the sanitize library or applying a safe-per-field sanitizer.
+// app.use(mongoSanitize());
 
 // Rate limiting for API endpoints
 const apiLimiter = rateLimit({
@@ -68,8 +71,8 @@ app.use('/api/', apiLimiter);
 // =====================================================
 
 mongoose.connect(process.env.MONGO_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
+    // Removed legacy/unsupported options `useNewUrlParser` and `useUnifiedTopology`.
+    // Modern mongoose/mongo drivers use sensible defaults for these.
     serverSelectionTimeoutMS: 5000,
     socketTimeoutMS: 45000,
 })
