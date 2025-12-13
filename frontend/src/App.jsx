@@ -1,4 +1,3 @@
-// src/App.jsx - Main Application Router
 import { lazy, Suspense } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
