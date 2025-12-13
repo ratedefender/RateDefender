@@ -1,3 +1,54 @@
+import React, { useEffect } from 'react';
+
+const AdSpace = ({ className = '', style = {}, adClient }) => {
+  const enableAds = import.meta.env.VITE_ENABLE_ADS === 'true';
+  const adsenseId = import.meta.env.VITE_ADSENSE_ID || adClient;
+
+  useEffect(() => {
+    if (!enableAds) return;
+    try {
+      (window.adsbygoogle = window.adsbygoogle || []).push({});
+    } catch (e) {
+      // ignore
+    }
+  }, [enableAds]);
+
+  if (!enableAds) {
+    return (
+      <div
+        className={className}
+        style={{
+          border: '1px dashed #ddd',
+          padding: 12,
+          borderRadius: 8,
+          background: '#fff',
+          color: '#666',
+          textAlign: 'center',
+          ...style,
+        }}
+      >
+        <strong>Ad placeholder</strong>
+        <div style={{ fontSize: 13, marginTop: 6 }}>Ads disabled (development)</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={className} style={style}>
+      <ins
+        className="adsbygoogle"
+        style={{ display: 'block' }}
+        data-ad-client={adsenseId}
+        data-ad-slot="1234567890"
+        data-ad-format="auto"
+        data-full-width-responsive="true"
+      />
+    </div>
+  );
+};
+
+export default AdSpace;
+
 // src/components/AdSpace.jsx - Smart Ad Component
 import { useEffect, useRef, memo } from 'react';
 
