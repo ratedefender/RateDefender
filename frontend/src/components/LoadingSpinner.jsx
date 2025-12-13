@@ -1,3 +1,56 @@
+import React from 'react';
+
+function LoadingSpinner({ size = 'medium', message = '', className = '' }) {
+  const sizes = { small: 16, medium: 32, large: 56 };
+  const dim = sizes[size] || sizes.medium;
+
+  return (
+    <div
+      className={`loading-spinner ${className}`}
+      role="status"
+      aria-live="polite"
+      style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+    >
+      <svg
+        width={dim}
+        height={dim}
+        viewBox="0 0 24 24"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <circle
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="#e6e6e6"
+          strokeWidth="4"
+        />
+        <path
+          d="M22 12a10 10 0 0 0-10-10"
+          stroke="#667eea"
+          strokeWidth="4"
+          strokeLinecap="round"
+        >
+          <animateTransform
+            attributeName="transform"
+            type="rotate"
+            from="0 12 12"
+            to="360 12 12"
+            dur="1s"
+            repeatCount="indefinite"
+          />
+        </path>
+      </svg>
+
+      {message ? (
+        <span style={{ color: '#444', fontSize: 14 }}>{message}</span>
+      ) : null}
+    </div>
+  );
+}
+
+export default LoadingSpinner;
 // ============================================================
 
 // src/components/LoadingSpinner.jsx - Reusable Loading Component
