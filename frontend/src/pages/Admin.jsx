@@ -1,3 +1,152 @@
+import React, { useEffect, useState } from 'react';
+import LoadingSpinner from '../components/LoadingSpinner';
+import API_URL from '../api';
+
+export default function Admin() {
+  const [password, setPassword] = useState('');
+  const [token, setToken] = useState(localStorage.getItem('rd_admin_token') || '');
+  const [loading, setLoading] = useState(false);
+  const [stats, setStats] = useState(null);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (token) fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
+  const handleLogin = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`${API_URL}/api/admin/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const json = await res.json();
+      if (json.success && json.token) {
+        setToken(json.token);
+        localStorage.setItem('rd_admin_token', json.token);
+      } else {
+        setError(json.message || json.error || 'Login failed');
+      }
+    } catch (err) {
+      setError('Login request failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchStats = async (days = 30) => {
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch(`${API_URL}/api/admin/stats?days=${days}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.status === 403) {
+        setError('Unauthorized — token invalid or expired');
+        setToken('');
+        localStorage.removeItem('rd_admin_token');
+        return;
+      }
+      const json = await res.json();
+      setStats(json);
+    } catch (err) {
+      setError('Failed to fetch stats');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API_URL}/api/admin/logout`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (e) {
+      // ignore
+    }
+    setToken('');
+    localStorage.removeItem('rd_admin_token');
+    setStats(null);
+  };
+
+  if (!token) {
+    return (
+      <div style={{ maxWidth: 640, margin: '40px auto', padding: 20 }}>
+        <h2>Admin Login</h2>
+        <form onSubmit={handleLogin} style={{ display: 'grid', gap: 12 }}>
+          <input
+            type="password"
+            placeholder="Admin password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <button type="submit" disabled={loading} style={{ padding: '8px 12px' }}>
+            {loading ? 'Signing in...' : 'Sign in'}
+          </button>
+          {error ? <div style={{ color: 'red' }}>{error}</div> : null}
+        </form>
+      </div>
+    );
+  }
+
+  return (
+    <div style={{ maxWidth: 1000, margin: '24px auto', padding: 20 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <h2>Admin Dashboard</h2>
+        <div>
+          <button onClick={handleLogout} style={{ padding: '8px 12px' }}>Logout</button>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 12 }}>
+        <button onClick={() => fetchStats(7)} style={{ marginRight: 8 }}>Last 7 days</button>
+        <button onClick={() => fetchStats(30)} style={{ marginRight: 8 }}>Last 30 days</button>
+        <button onClick={() => fetchStats(90)}>Last 90 days</button>
+      </div>
+
+      <div style={{ marginTop: 20 }}>
+        {loading ? (
+          <LoadingSpinner message="Loading stats..." />
+        ) : error ? (
+          <div style={{ color: 'red' }}>{error}</div>
+        ) : stats ? (
+          <div>
+            <h3>{stats.period}</h3>
+            <p><strong>Total Views:</strong> {stats.totals?.totalViews ?? 0}</p>
+            <p><strong>Total Calculations:</strong> {stats.totals?.totalCalculations ?? 0}</p>
+            <div style={{ marginTop: 12 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th style={{ textAlign: 'left', padding: 8, borderBottom: '1px solid #eee' }}>Date</th>
+                    <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Views</th>
+                    <th style={{ textAlign: 'right', padding: 8, borderBottom: '1px solid #eee' }}>Calculations</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(stats.stats || []).map((d) => (
+                    <tr key={d.date}>
+                      <td style={{ padding: 8, borderBottom: '1px solid #fafafa' }}>{d.date}</td>
+                      <td style={{ padding: 8, textAlign: 'right', borderBottom: '1px solid #fafafa' }}>{d.views}</td>
+                      <td style={{ padding: 8, textAlign: 'right', borderBottom: '1px solid #fafafa' }}>{d.calculations}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          <div>No stats loaded. Click a period above.</div>
+        )}
+      </div>
+    </div>
+  );
+}
 // src/pages/Admin.jsx - Secure Admin Dashboard
 import { useState, useEffect, useCallback } from 'react';
 import LoadingSpinner from '../components/LoadingSpinner';
