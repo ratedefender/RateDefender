@@ -1,3 +1,120 @@
+import React, { useEffect, useState } from 'react';
+import API_URL from '../api';
+import LoadingSpinner from '../components/LoadingSpinner';
+import AdSpace from '../components/AdSpace';
+
+export default function Home() {
+  const [countries, setCountries] = useState([]);
+  const [loadingCountries, setLoadingCountries] = useState(true);
+  const [form, setForm] = useState({ myLocation: 'USA', clientLocation: 'India', currentRate: 20, skill: 'web development' });
+  const [result, setResult] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const fetchCountries = async () => {
+      try {
+        const res = await fetch(`${API_URL}/api/countries`);
+        const json = await res.json();
+        setCountries(json.countries || []);
+      } catch (err) {
+        console.warn('Failed to load countries', err);
+      } finally {
+        setLoadingCountries(false);
+      }
+    };
+    fetchCountries();
+  }, []);
+
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setResult(null);
+    try {
+      const res = await fetch(`${API_URL}/api/calculate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...form, currentRate: parseFloat(form.currentRate) })
+      });
+      const json = await res.json();
+      setResult(json);
+    } catch (err) {
+      setResult({ error: 'Request failed' });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div style={{ maxWidth: 900, margin: '24px auto', padding: 20 }}>
+      <h1>Rate Defender</h1>
+      <p>Adjust your freelance rate by purchasing power parity and local conditions.</p>
+
+      <div style={{ marginBottom: 18 }}>
+        <AdSpace />
+      </div>
+
+      <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 12 }}>
+        <label>
+          Your location
+          <br />
+          {loadingCountries ? (
+            <LoadingSpinner size="small" message="Loading..." />
+          ) : (
+            <select name="myLocation" value={form.myLocation} onChange={handleChange}>
+              {countries.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          )}
+        </label>
+
+        <label>
+          Client location
+          <br />
+          <select name="clientLocation" value={form.clientLocation} onChange={handleChange}>
+            {countries.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </label>
+
+        <label>
+          Current rate (USD)
+          <br />
+          <input name="currentRate" type="number" value={form.currentRate} onChange={handleChange} />
+        </label>
+
+        <label>
+          Skill / Role
+          <br />
+          <input name="skill" value={form.skill} onChange={handleChange} />
+        </label>
+
+        <div>
+          <button type="submit" disabled={submitting} style={{ padding: '8px 14px' }}>
+            {submitting ? 'Calculating...' : 'Calculate fair rate'}
+          </button>
+        </div>
+      </form>
+
+      <div style={{ marginTop: 20 }}>
+        {result ? (
+          result.error ? (
+            <div style={{ color: 'red' }}>{result.error}</div>
+          ) : (
+            <div style={{ background: '#f7f9fc', padding: 12, borderRadius: 8 }}>
+              <h3>Result</h3>
+              <p><strong>Fair rate:</strong> ${result.fairRate}</p>
+              <p><strong>Percentage change:</strong> {result.percentageChange}%</p>
+              <p><strong>Purchasing power ratio:</strong> {result.purchasingPowerRatio}x</p>
+              <p>{result.insight}</p>
+              <p style={{ fontSize: 12, color: '#666' }}>Calculation time: {result.calculationTime}</p>
+            </div>
+          )
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
 // src/pages/Home.jsx - High-Performance Calculator Page
 import { useState, useEffect, memo, useCallback } from 'react';
 import { Helmet } from 'react-helmet-async';
